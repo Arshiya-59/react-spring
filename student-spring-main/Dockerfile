@@ -1,11 +1,14 @@
-# Use OpenJDK
-FROM eclipse-temurin:21-jdk-alpine
-
+# Build stage
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
 
-COPY target/*.jar app.jar
-
+# Run stage
+FROM eclipse-temurin:21-jdk-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
-# Pass Render's $PORT to Spring Boot
-CMD ["sh", "-c", "java -Dserver.port=$PORT -jar app.jar"]
+# Use Render's $PORT if set, otherwise default to 8080
+CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]
